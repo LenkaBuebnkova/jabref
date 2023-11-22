@@ -195,7 +195,15 @@ public class CopyMoreAction extends SimpleCommand {
         StringReader layoutString = new StringReader("\\citationkey - \\begin{title}\\format[RemoveBrackets]{\\title}\\end{title}\n");
         Layout layout;
         try {
-            layout = new LayoutHelper(layoutString, preferencesService.getLayoutFormatterPreferences(), abbreviationRepository).getLayoutFromText();
+            // Check if necessary parameters are not null before creating LayoutHelper
+            if (preferencesService.getLayoutFormatterPreferences() != null && abbreviationRepository != null) {
+                layout = new LayoutHelper(layoutString, preferencesService.getLayoutFormatterPreferences(), abbreviationRepository).getLayoutFromText();
+                // Rest of the method...
+            } else {
+                // Handle the case where LayoutHelper cannot be created (e.g., log an error, show a message)
+                LOGGER.error("Cannot create LayoutHelper due to missing preferences or abbreviationRepository");
+                return;
+            }
         } catch (IOException e) {
             LOGGER.info("Could not get layout.", e);
             return;

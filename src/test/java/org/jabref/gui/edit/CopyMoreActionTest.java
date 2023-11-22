@@ -24,8 +24,10 @@ import org.jabref.preferences.PreferencesService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -219,5 +221,75 @@ public class CopyMoreActionTest {
         verify(clipBoardManager, times(1)).setContent(copiedDois);
         verify(dialogService, times(1)).notify(Localization.lang("Copied '%0' to clipboard.",
                 JabRefDialogService.shortenDialogMessage(copiedDois)));
+    }
+
+    @Test
+    public void testExecuteCopyKeyAndTitleWithNoKeys() {
+        BibEntry entryWithNoKey = (BibEntry) entry.clone();
+        entryWithNoKey.clearCiteKey();
+        ObservableList<BibEntry> entriesWithNoKeys = FXCollections.observableArrayList(entryWithNoKey);
+        BibDatabaseContext databaseContext = new BibDatabaseContext(new BibDatabase(entriesWithNoKeys));
+
+        when(stateManager.getActiveDatabase()).thenReturn(Optional.ofNullable(databaseContext));
+        when(stateManager.getSelectedEntries()).thenReturn(entriesWithNoKeys);
+        copyMoreAction = new CopyMoreAction(StandardActions.COPY_KEY_AND_TITLE, dialogService, stateManager, clipBoardManager, preferencesService, abbreviationRepository);
+        copyMoreAction.execute();
+
+        verify(clipBoardManager, times(0)).setContent(any(String.class));
+        verify(dialogService, never()).notify(Localization.lang("None of the selected entries have citation keys."));
+    }
+
+    @Test
+    public void testExecuteCopyKeyAndLinkWithNoKeys() {
+        BibEntry entryWithNoKey = (BibEntry) entry.clone();
+        entryWithNoKey.clearCiteKey();
+        ObservableList<BibEntry> entriesWithNoKeys = FXCollections.observableArrayList(entryWithNoKey);
+        BibDatabaseContext databaseContext = new BibDatabaseContext(new BibDatabase(entriesWithNoKeys));
+
+        when(stateManager.getActiveDatabase()).thenReturn(Optional.ofNullable(databaseContext));
+        when(stateManager.getSelectedEntries()).thenReturn(entriesWithNoKeys);
+        copyMoreAction = new CopyMoreAction(StandardActions.COPY_KEY_AND_LINK, dialogService, stateManager, clipBoardManager, preferencesService, abbreviationRepository);
+        copyMoreAction.execute();
+
+        verify(clipBoardManager, times(0)).setHtmlContent(any(String.class), any(String.class));
+        verify(dialogService, times(1)).notify(Localization.lang("None of the selected entries have citation keys."));
+    }
+
+    @Test
+    public void testExecuteCopyKeyAndLinkOnPartialSuccess() {
+        BibEntry entryWithNoKey = (BibEntry) entry.clone();
+        entryWithNoKey.clearCiteKey();
+        ObservableList<BibEntry> mixedEntries = FXCollections.observableArrayList(entryWithNoKey, entry);
+        BibDatabaseContext databaseContext = new BibDatabaseContext(new BibDatabase(mixedEntries));
+
+        when(stateManager.getActiveDatabase()).thenReturn(Optional.ofNullable(databaseContext));
+        when(stateManager.getSelectedEntries()).thenReturn(mixedEntries);
+        copyMoreAction = new CopyMoreAction(StandardActions.COPY_KEY_AND_LINK, dialogService, stateManager, clipBoardManager, preferencesService, abbreviationRepository);
+        copyMoreAction.execute();
+
+        String keyAndLink = "abc" + entry.getField(StandardField.URL).orElse("");
+        String expectedHtmlContent = "abc\n" + entry.getField(StandardField.URL).orElse("");
+
+        verify(clipBoardManager, times(1)).setHtmlContent(eq(expectedHtmlContent), eq(expectedHtmlContent));
+        verify(dialogService, times(1)).notify(Localization.lang("Warning: %0 out of %1 entries have undefined citation key.",
+                Integer.toString(mixedEntries.size() - titles.size()), Integer.toString(mixedEntries.size())));
+    }
+
+    @Test
+    public void testExecuteCopyKeyAndLinkOnSuccess() {
+        ObservableList<BibEntry> entriesWithKeys = FXCollections.observableArrayList(entry);
+        BibDatabaseContext databaseContext = new BibDatabaseContext(new BibDatabase(entriesWithKeys));
+
+        when(stateManager.getActiveDatabase()).thenReturn(Optional.ofNullable(databaseContext));
+        when(stateManager.getSelectedEntries()).thenReturn(entriesWithKeys);
+        copyMoreAction = new CopyMoreAction(StandardActions.COPY_KEY_AND_LINK, dialogService, stateManager, clipBoardManager, preferencesService, abbreviationRepository);
+        copyMoreAction.execute();
+
+        String keyAndLink = "abc" + entry.getField(StandardField.URL).orElse("");
+        String expectedHtmlContent = "abc\n" + entry.getField(StandardField.URL).orElse("");
+
+        verify(clipBoardManager, times(1)).setHtmlContent(eq(expectedHtmlContent), eq(expectedHtmlContent));
+        verify(dialogService, times(1)).notify(Localization.lang("Copied '%0' to clipboard.",
+                JabRefDialogService.shortenDialogMessage(keyAndLink)));
     }
 }

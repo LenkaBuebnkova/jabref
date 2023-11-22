@@ -3,6 +3,7 @@ package org.jabref.gui.edit;
 import java.util.Arrays;
 import java.util.List;
 
+import javafx.beans.property.ObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -14,8 +15,10 @@ import org.jabref.preferences.BibEntryPreferences;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -78,5 +81,43 @@ public class ManageKeywordsViewModelTest {
         keywordsViewModel.removeKeyword("Human-machine interaction");
 
         assertNotEquals(FXCollections.observableList(originalKeywordsList), modifiedKeywords, "compared lists are identical");
+    }
+
+    @Test
+    void getDisplayType() {
+        ManageKeywordsDisplayType expectedDisplayType = ManageKeywordsDisplayType.CONTAINED_IN_ALL_ENTRIES;
+        assertEquals(expectedDisplayType, keywordsViewModel.getDisplayType(),
+                "Initial display type should be CONTAINED_IN_ALL_ENTRIES");
+    }
+
+    @Test
+    void displayTypeProperty() {
+        ObjectProperty<ManageKeywordsDisplayType> displayTypeProperty = keywordsViewModel.displayTypeProperty();
+        assertNotNull(displayTypeProperty, "displayTypeProperty should not be null");
+
+        ManageKeywordsDisplayType expectedDisplayType = ManageKeywordsDisplayType.CONTAINED_IN_ANY_ENTRY;
+        displayTypeProperty.set(expectedDisplayType);
+
+        assertEquals(expectedDisplayType, displayTypeProperty.get(),
+                "displayTypeProperty should return the expected display type");
+    }
+
+    @Test
+    void saveChangesNoChanges() {
+        // No changes should result in no exception or error
+        assertDoesNotThrow(() -> keywordsViewModel.saveChanges(),
+                "No changes should not throw an exception");
+    }
+
+    @Test
+    void saveChangesWithChanges() {
+        // Modify keywords to simulate changes
+        ObservableList<String> modifiedKeywords = keywordsViewModel.getKeywords();
+        modifiedKeywords.remove("Human-machine interaction");
+        modifiedKeywords.add("NewKeyword");
+
+        // Save changes
+        assertDoesNotThrow(() -> keywordsViewModel.saveChanges(),
+                "Changes should not throw an exception");
     }
 }
