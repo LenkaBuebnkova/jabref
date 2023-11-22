@@ -198,9 +198,8 @@ public class CopyMoreAction extends SimpleCommand {
             // Check if necessary parameters are not null before creating LayoutHelper
             if (preferencesService.getLayoutFormatterPreferences() != null && abbreviationRepository != null) {
                 layout = new LayoutHelper(layoutString, preferencesService.getLayoutFormatterPreferences(), abbreviationRepository).getLayoutFromText();
-                // Rest of the method...
             } else {
-                // Handle the case where LayoutHelper cannot be created (e.g., log an error, show a message)
+                // Handle the case where LayoutHelper cannot be created
                 LOGGER.error("Cannot create LayoutHelper due to missing preferences or abbreviationRepository");
                 return;
             }
